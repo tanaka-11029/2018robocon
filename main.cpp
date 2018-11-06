@@ -34,52 +34,11 @@ int main(void){
 		cout << "スタートできません。" << endl;
 		return -1;
 	}
-	ms.send(10, 100,0);
+	ms.send(10, 10, 255);
 	gpioSetMode(26, PI_INPUT);
 	gpioSetPullUpDown(26, PI_PUD_UP); 
 	gpioSetMode(13, PI_OUTPUT);
 	struct timeval mytime;
-	bool zone=false;
-	bool already = false;
-	cout << "キャリブレーション待機" << endl;
-	cout << "コート：青" << endl;
-	gpioDelay(2000000);
-	UPDATELOOP(Controller,!Controller.button(SQUARE) || !Controller.button(RIGHT)){
-		gettimeofday(&mytime, NULL);
-		gpioWrite(13,mytime.tv_usec/250000%2);
-		if(Controller.button(START) && Controller.button(DOWN)){
-			gpioWrite(13,0);
-			ms.send(10,30,0);
-			ms.send(10, 20,1);
-			cout << "プログラム終了" <<endl;
-			ms.send(255,255,0);
-			return 0;
-		}
-		if(mytime.tv_usec/500000){
-			if(already){
-				ms.send(10, 101,zone);
-			}else{
-				ms.send(10,101,2);
-			}
-		}
-
-		if(Controller.press(TRIANGLE)){//赤
-			zone = true;
-			already=true;
-			ms.send(10, 101,1);
-			cout << "コート：赤" << endl;
-		}
-		if(Controller.press(CIRCLE)){//青
-			zone = false;
-			already=true;
-			ms.send(10,101,1);
-			cout << "コート：青" << endl;
-		}
-	}
-	GY521 gyro;
-	gyro.start();
-	gyro.resetYaw(0);
-	cout << "プログラム開始" <<endl;
 	double speed =1;
 	int xx,yy;
 	int right_x,right_y,left_x,left_y,right_t,left_t;
@@ -90,6 +49,7 @@ int main(void){
 	//	int range;
 	int a,b,c,d;
 	int count=0;
+	int bright=255;
 	double omega;
 	double last;
 	double Yaw;
@@ -105,6 +65,78 @@ int main(void){
 	bool yorokobi = false;
 	bool loop = false;
 	bool send = false;
+	bool zone=false;
+	bool already = false;
+	bool change = false;
+	cout << "キャリブレーション待機" << endl;
+	cout << "コート：青" << endl;
+	gpioDelay(5000);
+	ms.send(10, 100,0);
+	gpioDelay(2000000);
+	UPDATELOOP(Controller,!Controller.button(SQUARE) || !Controller.button(RIGHT)){
+		gettimeofday(&mytime, NULL);
+		gpioWrite(13,mytime.tv_usec/250000%2);
+		if(Controller.button(START) && Controller.button(DOWN)){
+			gpioWrite(13,0);
+			ms.send(10,30,0);
+			ms.send(10, 20,1);
+			cout << "プログラム終了" <<endl;
+			ms.send(255,255,0);
+			return 0;
+		}
+		if(mytime.tv_usec/50000){
+			if(send){
+				loop=true;
+			}
+		}else if(!send){
+			send=true;
+		}
+		if(loop){
+			if(already){
+				ms.send(10, 101,zone);
+			}else{
+				ms.send(10,101,2);
+			}
+			if(change){
+				gpioDelay(5000);
+				int a = ms.send(10, 10,bright);
+//				gpioDelay(5000);
+//				ms.send(10,235,12);
+				if(a == bright)change = false;
+			}
+		}
+
+		if(Controller.press(TRIANGLE)){//赤
+			zone = true;
+			already=true;
+			ms.send(10, 101,1);
+			cout << "コート：赤" << endl;
+		}
+		if(Controller.press(CIRCLE)){//青
+			zone = false;
+			already=true;
+			ms.send(10,101,1);
+			cout << "コート：青" << endl;
+		}
+		if(Controller.button(UP)){//明るさ調整
+			if(bright<255)bright++;
+			change = true;
+		}else if(Controller.button(DOWN)){
+			if(bright>0)bright--;
+			change = true;
+		}else if(Controller.press(RIGHT)){
+			bright=255;
+			change=true;
+		}else if(Controller.press(LEFT)){
+			bright=50;
+			change=true;
+		}
+
+	}
+	GY521 gyro;
+	gyro.start();
+	gyro.resetYaw(0);
+	cout << "プログラム開始" <<endl;
 	Controller.yReverseSet(true);
 	gpioWrite(13, 1);
 	UPDATELOOP(Controller,!Controller.button(START) || !Controller.button(DOWN)){
@@ -280,7 +312,7 @@ int main(void){
 			left = false;
 			back = false;
 			yorokobi=false;
-		} else if(Controller.button(R2) || Controller.button(L2)){	
+		}else if(Controller.button(R2) || Controller.button(L2)){	
 			omega = left_t-right_t;
 		}else{
 			if(correct){
@@ -300,7 +332,7 @@ int main(void){
 				omega=300/M_PI*atan(( !rear ? ( Yaw >  0 ? -90 : (-90-Yaw)) : ( Yaw > 0) ? 90-Yaw : -90 )*M_PI/70);
 				if((rear && Yaw < 92 && Yaw > 88) || (!rear && Yaw < -88 && Yaw > -92))left = false;
 			}else{
-				omega = left_t-right_t;
+				omega=0;
 			}
 		}
 		theta=-Yaw*M_PI/180;
@@ -487,6 +519,7 @@ int main(void){
 	}
 	gpioDelay(5000);
 	ms.send(10, 30,0);
+	gpioDelay(5000);
 	ms.send(10, 20,1);
 	ms.send(255, 255, 0);//safeoperation
 	gpioWrite(13, 0);
