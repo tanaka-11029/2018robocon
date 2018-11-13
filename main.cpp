@@ -68,24 +68,24 @@ int main(void){
 	bool zone=false;
 	bool already = false;
 	bool change = false;
-	unsigned long long int timestamp[4]={0};
+	unsigned long long int timestamp[5]={0};
 	cout << "キャリブレーション待機" << endl;
 	cout << "コート：青" << endl;
 	gpioDelay(5000);
 	ms.send(10, 100,0);
-	gpioDelay(2000000);
+	gpioDelay(1260000);
 	UPDATELOOP(Controller,!Controller.button(SQUARE) || !Controller.button(RIGHT)){
 		//gettimeofday(&mytime, NULL);
 		gpioWrite(13,/*mytime.tv_usec*/clock()/250000%2);
 		if(Controller.button(START) && Controller.button(DOWN)){
 			gpioWrite(13,0);
 			ms.send(10,30,0);
-			ms.send(10, 10,1);
+			ms.send(10,10,1);
 			cout << "プログラム終了" <<endl;
 			ms.send(255,255,0);
 			return 0;
 		}
-		if(mytime.tv_usec/50000){
+		if(clock()/500000%2){
 			if(send){
 				loop=true;
 			}
@@ -134,6 +134,7 @@ int main(void){
 		}
 
 	}
+	gpioWrite(13, 0);
 	GY521 gyro;
 	gyro.start();
 	gyro.resetYaw(0);
@@ -346,10 +347,10 @@ int main(void){
 			v[2]=xx-yy+omega;//-
 			v[3]=-xx-yy+omega;//+
 			}*/
-		v[0]=-xx+yy-omega;//+
-		v[1]=xx+yy-omega;//-
-		v[2]=-xx+yy+omega;//-
-		v[3]=xx+yy+omega;//+
+		v[0]=xx+yy-omega;//+
+		v[1]=-xx+yy-omega;//-
+		v[2]=xx+yy+omega;//-
+		v[3]=-xx+yy+omega;//+
 
 
 
@@ -385,7 +386,7 @@ int main(void){
 
 		//cout << a <<"\t"<< b <<"\t"<< c <<"\t"<< d <<"\t"<< Yaw <<"\t"<< omega <<"\t"<< rear <<"\t"<<endl;//モータードライバ返り値表示
 
-		cout<<v[0]<<"\t"<<v[1]<<"\t"<<v[2]<<"\t"<<v[3]<<"\t"<< Yaw <<"\t"<< omega <<"\t"<< rear <<"\t"<<rearr<<"\t"<<rearl<<"\n";
+		cout<<v[0]<<"\t"<<v[1]<<"\t"<<v[2]<<"\t"<<v[3]<<"\t"<< Yaw <<"\t"<< omega <<"\tx:"<< right_x <<"\ty:"<<right_y<<"\t"<< rear <<"\t"<<rearr<<"\t"<<rearl<<"\n";
 
 		/*if(Controller.button(TRIANGLE)&&Controller.button(R1)){//包んでポン
 			ms.send(7,2,230);
@@ -417,41 +418,64 @@ int main(void){
 			ms.send(7,4,0);
 			if(!emergency)ms.send(10, 15, 17+zone);
 		}*/
+		if(Controller.button(R1)){
+			if(Controller.press(SQUARE)){
+				timestamp[4]=clock();
+				ms.send(8,2,254);
+				if(!emergency)ms.send(10,13,27+zone);
+			}else if(clock() - timestamp[1] > 2000000){
+				ms.send(8,2,-254);
+				if(!emergency)ms.send(10,13,17+zone);
+			}
 
-		if(Controller.press(TRIANGLE)){//包んでポン　ソレノイドバージョン
-			timestamp[0]=clock();
-			ms.send(7,2,251);
-			if(!emergency)ms.send(10,12,27+zone);
-		}else if(clock() - timestamp[0] > 2000000){
-			ms.send(7,2,-251);
-			if(!emergency)ms.send(10,12,17+zone);
-		}
-		
-		if(Controller.press(SQUARE)){
-			timestamp[1]=clock();
-			ms.send(7,2,252);
-			if(!emergency)ms.send(10,13,27+zone);
-		}else if(clock() - timestamp[1] > 2000000){
-			ms.send(7,2,-252);
-			if(!emergency)ms.send(10,13,17+zone);
+			if(Controller.press(CIRCLE)){
+				timestamp[5]=clock();
+				ms.send(4,2,251);
+				//if(!emergency)ms.send(10,15,27+zone);
+			}else if(clock() - timestamp[2] > 2000000){
+				ms.send(4,2,-251);
+			}else if(clock() - timestamp[2] > 5000000){
+				//if(!emergency)ms.send(10,15,17+zone);
+			}
+
+			if(Controller.button(L1)){
+				yorokobi=true;
+				emergency=true;
+				ms.send(10,109,0);
+			}
+		}else{
+
+			if(Controller.press(TRIANGLE)){//包んでポン　ソレノイドバージョン
+				timestamp[0]=clock();
+				ms.send(8,2,251);
+				if(!emergency)ms.send(10,12,27+zone);
+			}else if(clock() - timestamp[0] > 2000000){
+				ms.send(8,2,-251);
+			}else if(clock() - timestamp[0] > 5000000){
+				if(!emergency)ms.send(10,12,17+zone);
+			}
+
+			if(Controller.press(SQUARE)){
+				timestamp[1]=clock();
+				ms.send(8,2,252);
+				if(!emergency)ms.send(10,14,27+zone);
+			}else if(clock() - timestamp[1] > 2000000){
+				ms.send(8,2,-252);
+			}else if(clock() - timestamp[1] > 5000000){
+				if(!emergency)ms.send(10,14,17+zone);
+			}
+
+			if(Controller.press(CIRCLE)){
+				timestamp[2]=clock();
+				ms.send(8,2,253);
+				if(!emergency)ms.send(10,15,27+zone);
+			}else if(clock() - timestamp[2] > 2000000){
+				ms.send(8,2,-253);
+			}else if(clock() - timestamp[2] > 5000000){
+				if(!emergency)ms.send(10,15,17+zone);
+			}
 		}
 
-		if(Controller.press(CIRCLE)){
-			timestamp[2]=clock();
-			//cout<<"solenoid"<<endl;
-			ms.send(7,2,253);
-			if(!emergency)ms.send(10,15,27+zone);
-		}else if(clock() - timestamp[2] > 2000000){
-			//cout<<"off"<<endl;
-			ms.send(7,2,-253);
-			if(!emergency)ms.send(10,15,17+zone);
-		}
-
-		if(Controller.button(R1) && Controller.button(L1)){
-			yorokobi=true;
-			emergency=true;
-			ms.send(10,109,0);
-		}
 		//gpioDelay(1000);//プリント関数使用時の重さを回避するため1msのウェイトをかける
 		//time_sleep(0.1);
 
