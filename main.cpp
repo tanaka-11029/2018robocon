@@ -35,18 +35,19 @@ int main(void){
 		return -1;
 	}
 	ms.send(10, 10, 255);
+//	ms,send(11, 10, 255);
 	gpioSetMode(26, PI_INPUT);
 	gpioSetPullUpDown(26, PI_PUD_UP); 
 	gpioSetMode(13, PI_OUTPUT);
-	struct timeval mytime;
+	//struct timeval mytime;
 	double speed =1;
 	int xx,yy;
 	int right_x,right_y,left_x,left_y,right_t,left_t;
-	//	int v1,v2,v3,v4;
+	//int v1,v2,v3,v4;
 	int v[4];
 	double theta;
-	//	double rf,rb,lf,lb;
-	//	int range;
+	//double rf,rb,lf,lb;
+	//int range;
 	int a,b,c,d;
 	int count=0;
 	int bright=255;
@@ -73,6 +74,7 @@ int main(void){
 	cout << "コート：青" << endl;
 	gpioDelay(5000);
 	ms.send(10, 100,0);
+//	ms.send(11, 100,0);
 	gpioDelay(1260000);
 	UPDATELOOP(Controller,!Controller.button(SQUARE) || !Controller.button(RIGHT)){
 		//gettimeofday(&mytime, NULL);
@@ -80,7 +82,9 @@ int main(void){
 		if(Controller.button(START) && Controller.button(DOWN)){
 			gpioWrite(13,0);
 			ms.send(10,30,0);
+//			ms.send(11,30,0);
 			ms.send(10,10,1);
+//			ms.send(11,10,1);
 			cout << "プログラム終了" <<endl;
 			ms.send(255,255,0);
 			return 0;
@@ -100,10 +104,11 @@ int main(void){
 			}
 			if(change){
 				gpioDelay(5000);
-				int a = ms.send(10, 20,bright);
+				a = ms.send(10, 20,bright);
+//				b = ms.send(11, 20,bright);
 //				gpioDelay(5000);
 //				ms.send(10,235,12);
-				if(a == bright)change = false;
+				if(a == bright && b == bright)change = false;
 			}
 		}
 
@@ -111,12 +116,14 @@ int main(void){
 			zone = true;
 			already=true;
 			ms.send(10, 101,1);
+//			ms.send(11, 101,1);
 			cout << "コート：赤" << endl;
 		}
 		if(Controller.press(CIRCLE)){//青
 			zone = false;
 			already=true;
 			ms.send(10,101,0);
+//			ms.send(11,101,0);
 			cout << "コート：青" << endl;
 		}
 		if(Controller.button(UP)){//明るさ調整
@@ -149,6 +156,7 @@ int main(void){
 			cout << "プログラム一時停止" <<endl;
 			ms.send(255,255,0);//safeoperation
 			ms.send(10,104,zone);
+//			ms.send(11,104,zone);
 			UPDATELOOP(Controller,!Controller.press(START)){
 				//gettimeofday(&mytime, NULL);//現在時刻取得
 				if(/*mytime.tv_usec*/clock()/250000%2){
@@ -161,12 +169,15 @@ int main(void){
 				gpioWrite(13,/*mytime.tv_usec*/clock()/500000%2);//0.5秒ごとに点滅
 				
 				if(gpioRead(26) && loop){
-					ms.send(10,102,1);
+					ms.send(10,102,zone);
+//					ms.send(11,102,zone);
 				}else if(loop){
 					if(count){
 						ms.send(10,103,count%7);
+//						ms.send(11,103,count%7);
 					}else{
 						ms.send(10,104,zone);
+//						ms.send(11,104,zone);
 					}
 				}
 
@@ -210,6 +221,7 @@ int main(void){
 			}else if(gpioRead(26)){
 				//cout << "非常"<<endl;
 				ms.send(10,105,zone);
+//				ms.send(11,105,zone);
 				emergency = true;
 			}else if(!select){
 				if(clock()-start>20000000)select=true;
@@ -223,7 +235,7 @@ int main(void){
 			loop=false;
 		}
 
-		if(zone){//赤
+		/*if(zone){//赤
 			if(Controller.press(UP)){
 				right = true;
 				correct = false;
@@ -252,6 +264,19 @@ int main(void){
 				left=false;
 				back=false;
 			}
+		}*/
+		if(Controller.press(UP)){
+			correct=true;
+			left = false;
+			right = false;
+		}else if(Controller.press(LEFT)){
+			left=true;
+			right = false;
+			correct=false;
+		}else if(Controller.press(RIGHT)){
+			right=true;
+			correct = false;
+			left = false;
 		}
 
 		if(Controller.button(DOWN) && Controller.button(R1)){//フラグリセット
@@ -346,18 +371,17 @@ int main(void){
 			v[1]=-xx-yy-omega;//-
 			v[2]=xx-yy+omega;//-
 			v[3]=-xx-yy+omega;//+
-			}*/
+		}*/
+
 		v[0]=xx+yy-omega;//+
 		v[1]=-xx+yy-omega;//-
 		v[2]=xx+yy+omega;//-
 		v[3]=-xx+yy+omega;//+
 
-
-
-		/*	v[0]=-right_x+right_y+omega;
-			v[1]=right_x+right_y-omega;
-			v[2]=-right_x+right_y-omega;
-			v[3]=right_x+right_y+omega;*/
+		/*v[0]=-right_x+right_y+omega;
+		v[1]=right_x+right_y-omega;
+		v[2]=-right_x+right_y-omega;
+		v[3]=right_x+right_y+omega;*/
 
 
 		for(int count=0; count < 4 ;count++){
@@ -422,57 +446,92 @@ int main(void){
 			if(Controller.press(SQUARE)){
 				timestamp[4]=clock();
 				ms.send(8,2,254);
-				if(!emergency)ms.send(10,13,27+zone);
+				if(!emergency){
+					ms.send(10,13,24);
+					//ms.send(11,14,77+zone);
+				}
 			}else if(clock() - timestamp[1] > 2000000){
 				ms.send(8,2,-254);
-				if(!emergency)ms.send(10,13,17+zone);
+				if(!emergency){
+					ms.send(10,13,17+zone);
+					//ms.send(11,14,84);
+				}
 			}
 
-			if(Controller.press(CIRCLE)){
+			/*if(Controller.press(CIRCLE)){
 				timestamp[5]=clock();
 				ms.send(4,2,251);
-				//if(!emergency)ms.send(10,15,27+zone);
-			}else if(clock() - timestamp[2] > 2000000){
+				if(!emergency){
+					ms.send(10,15,22);
+					ms.send(11,15,77+zone);
+				}
+			}else if(clock() - timestamp[5] > 2000000){
 				ms.send(4,2,-251);
-			}else if(clock() - timestamp[2] > 5000000){
-				//if(!emergency)ms.send(10,15,17+zone);
-			}
+			}else if(clock() - timestamp[5] > 5000000){
+				if(!emergency){
+					ms.send(10,15,17+zone);
+					ms.send(11,15,82);
+				}
+			}*/
 
 			if(Controller.button(L1)){
 				yorokobi=true;
 				emergency=true;
 				ms.send(10,109,0);
+//				ms.send(11,109,0);
 			}
 		}else{
 
 			if(Controller.press(TRIANGLE)){//包んでポン　ソレノイドバージョン
 				timestamp[0]=clock();
 				ms.send(8,2,251);
-				if(!emergency)ms.send(10,12,27+zone);
+				if(!emergency){
+					ms.send(10,12,20);
+					//ms.send(11,11,77+zone);
+				}
 			}else if(clock() - timestamp[0] > 2000000){
 				ms.send(8,2,-251);
 			}else if(clock() - timestamp[0] > 5000000){
-				if(!emergency)ms.send(10,12,17+zone);
+				if(!emergency){
+					ms.send(10,12,17+zone);
+					//ms.send(11,11,80);
+				}
 			}
 
 			if(Controller.press(SQUARE)){
 				timestamp[1]=clock();
 				ms.send(8,2,252);
-				if(!emergency)ms.send(10,14,27+zone);
+				if(!emergency){
+					ms.send(10,14,23);
+					//ms.send(11,12,77+zone);
+				}
 			}else if(clock() - timestamp[1] > 2000000){
 				ms.send(8,2,-252);
 			}else if(clock() - timestamp[1] > 5000000){
-				if(!emergency)ms.send(10,14,17+zone);
+				if(!emergency){
+					ms.send(10,14,17+zone);
+					//ms.send(11,12,83);
+				}
 			}
 
 			if(Controller.press(CIRCLE)){
 				timestamp[2]=clock();
 				ms.send(8,2,253);
-				if(!emergency)ms.send(10,15,27+zone);
+				if(!emergency){
+					ms.send(10,15,25);//ms.send(11,16,25);
+					//gpioDelay(5000);
+					//ms.send(11,107,zone);
+					//ms.send(11,13,77+zone);
+				}
 			}else if(clock() - timestamp[2] > 2000000){
 				ms.send(8,2,-253);
 			}else if(clock() - timestamp[2] > 5000000){
-				if(!emergency)ms.send(10,15,17+zone);
+				if(!emergency){
+					ms.send(10,15,17+zone);//ms.send(11,16,17+zone);
+					//gpioDelay(5000);
+					//ms.send(11,108,zone);
+					//ms.send(11,13,85);
+				}
 			}
 		}
 
