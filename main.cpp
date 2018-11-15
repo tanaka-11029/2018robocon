@@ -279,17 +279,6 @@ int main(void){
 			left = false;
 		}
 
-		if(Controller.button(DOWN) && Controller.button(R1)){//フラグリセット
-			gyro.resetYaw(0);
-			rear = false;
-			rearr = false;
-			rearl = false;
-			correct = false;
-			right = false;
-			left = false;
-			back = false;
-		}
-
 		if(!rear){
 			if(last>170&&Yaw<10){
 				rear=true;
@@ -443,34 +432,20 @@ int main(void){
 			if(!emergency)ms.send(10, 15, 17+zone);
 		}*/
 		if(Controller.button(R1)){
-			if(Controller.press(SQUARE)){
-				timestamp[4]=clock();
+			if(Controller.press(SQUARE)){//包んでポン　ソレノイドバージョン
+				timestamp[3]=clock();
 				ms.send(8,2,254);
 				if(!emergency){
 					ms.send(10,13,24);
 					//ms.send(11,14,77+zone);
 				}
-			}else if(clock() - timestamp[1] > 2000000){
-				ms.send(8,2,-254);
-				if(!emergency){
-					ms.send(10,13,17+zone);
-					//ms.send(11,14,84);
-				}
 			}
-
 			/*if(Controller.press(CIRCLE)){
-				timestamp[5]=clock();
+				timestamp[4]=clock();
 				ms.send(4,2,251);
 				if(!emergency){
 					ms.send(10,15,22);
 					ms.send(11,15,77+zone);
-				}
-			}else if(clock() - timestamp[5] > 2000000){
-				ms.send(4,2,-251);
-			}else if(clock() - timestamp[5] > 5000000){
-				if(!emergency){
-					ms.send(10,15,17+zone);
-					ms.send(11,15,82);
 				}
 			}*/
 
@@ -478,26 +453,29 @@ int main(void){
 				yorokobi=true;
 				emergency=true;
 				ms.send(10,109,0);
-//				ms.send(11,109,0);
+				//ms.send(11,109,0);
+			}
+
+			if(Controller.button(DOWN)){//フラグリセット
+				gyro.resetYaw(0);
+				rear = false;
+				rearr = false;
+				rearl = false;
+				correct = false;
+				right = false;
+				left = false;
+				back = false;
 			}
 		}else{
 
-			if(Controller.press(TRIANGLE)){//包んでポン　ソレノイドバージョン
+			if(Controller.press(TRIANGLE)){
 				timestamp[0]=clock();
 				ms.send(8,2,251);
 				if(!emergency){
 					ms.send(10,12,20);
 					//ms.send(11,11,77+zone);
 				}
-			}else if(clock() - timestamp[0] > 2000000){
-				ms.send(8,2,-251);
-			}else if(clock() - timestamp[0] > 5000000){
-				if(!emergency){
-					ms.send(10,12,17+zone);
-					//ms.send(11,11,80);
-				}
 			}
-
 			if(Controller.press(SQUARE)){
 				timestamp[1]=clock();
 				ms.send(8,2,252);
@@ -505,15 +483,7 @@ int main(void){
 					ms.send(10,14,23);
 					//ms.send(11,12,77+zone);
 				}
-			}else if(clock() - timestamp[1] > 2000000){
-				ms.send(8,2,-252);
-			}else if(clock() - timestamp[1] > 5000000){
-				if(!emergency){
-					ms.send(10,14,17+zone);
-					//ms.send(11,12,83);
-				}
 			}
-
 			if(Controller.press(CIRCLE)){
 				timestamp[2]=clock();
 				ms.send(8,2,253);
@@ -523,17 +493,55 @@ int main(void){
 					//ms.send(11,107,zone);
 					//ms.send(11,13,77+zone);
 				}
-			}else if(clock() - timestamp[2] > 2000000){
-				ms.send(8,2,-253);
-			}else if(clock() - timestamp[2] > 5000000){
-				if(!emergency){
-					ms.send(10,15,17+zone);//ms.send(11,16,17+zone);
-					//gpioDelay(5000);
-					//ms.send(11,108,zone);
-					//ms.send(11,13,85);
-				}
 			}
 		}
+
+		if(clock() - timestamp[0] > 2000000){
+			ms.send(8,2,-251);
+		}else if(clock() - timestamp[0] > 5000000){
+			if(!emergency){
+				ms.send(10,12,17+zone);
+				//ms.send(11,11,80);
+			}
+		}
+
+		if(clock() - timestamp[1] > 2000000){
+			ms.send(8,2,-252);
+		}else if(clock() - timestamp[1] > 5000000){
+			if(!emergency){
+				ms.send(10,14,17+zone);
+				//ms.send(11,12,83);
+			}
+		}
+
+		if(clock() - timestamp[2] > 2000000){
+			ms.send(8,2,-253);
+		}else if(clock() - timestamp[2] > 5000000){
+			if(!emergency){
+				ms.send(10,15,17+zone);//ms.send(11,16,17+zone);
+				//gpioDelay(5000);
+				//ms.send(11,108,zone);
+				//ms.send(11,13,85);
+			}
+		}
+
+		if(clock() - timestamp[3] > 2000000){
+			ms.send(8,2,-254);
+		}else if(clock() - timestamp[3] > 5000000){
+			if(!emergency){
+				ms.send(10,13,17+zone);
+				//ms.send(11,14,84);
+			}
+		}
+		
+		/*if(clock() - timestamp[4] > 2000000){
+			ms.send(4,2,-251);
+		}else if(clock() - timestamp[4] > 5000000){
+			if(!emergency){
+				ms.send(10,15,17+zone);
+				ms.send(11,15,82);
+			}
+		}*/
 
 		//gpioDelay(1000);//プリント関数使用時の重さを回避するため1msのウェイトをかける
 		//time_sleep(0.1);
