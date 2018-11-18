@@ -74,7 +74,9 @@ int main(void){
 	bool led = false;
 	int lc = 0;
 	int ledc = 0;
+	bool r1 = false;
 	bool tsu[5] = {false};
+	bool mada = false;
 	unsigned long long int timestamp[5] = {0};
 	cout << "キャリブレーション待機" << endl;
 	cout << "コート：青" << endl;
@@ -84,7 +86,7 @@ int main(void){
 	gpioDelay(1260000);
 	UPDATELOOP(Controller,!Controller.button(SQUARE) || !Controller.button(RIGHT)){
 		//gettimeofday(&mytime, NULL);
-		gpioWrite(13,/*mytime.tv_usec*/clock()/250000%2);
+		gpioWrite(13,/*mytime.tv_usec*/(unsigned)clock()/250000%2);
 		if(Controller.button(START) && Controller.button(DOWN)){
 			gpioWrite(13,0);
 			ms.send(10,30,0);
@@ -151,11 +153,15 @@ int main(void){
 	gyro.resetYaw(0);
 	cout << "プログラム開始" <<endl;
 	Controller.yReverseSet(true);
-	unsigned long long int start = clock();
+	unsigned long long int  start = clock();
 	gpioWrite(13, 1);
 	UPDATELOOP(Controller,!Controller.button(START) || !Controller.button(DOWN)){
 		//LED.update();
 		if(Controller.press(SELECT)){
+			correct = false;
+			right = false;
+			left = false;
+			back = false;
 			select = true;
 			cout << "プログラム一時停止" <<endl;
 			ms.send(255,255,0);//safeoperation
@@ -163,14 +169,14 @@ int main(void){
 			ms.send(11,104,zone);
 			UPDATELOOP(Controller,!Controller.press(START)){
 				//gettimeofday(&mytime, NULL);//現在時刻取得
-				if(/*mytime.tv_usec*/clock()/250000%2){
+				if(/*mytime.tv_usec*/(unsigned)clock()/250000%2){
 					if(send){
 						loop=true;
 					}
 				}else if(!send){
 					send=true;
 				}
-				gpioWrite(13,/*mytime.tv_usec*/clock()/500000%2);//0.5秒ごとに点滅
+				gpioWrite(13,/*mytime.tv_usec*/(unsigned)clock()/500000%2);//0.5秒ごとに点滅
 
 				if(gpioRead(26) && loop){
 					ms.send(10,102,zone);
@@ -242,19 +248,20 @@ int main(void){
 				back=false;
 			}
 		}*/
-		if(Controller.press(UP)){
+		if(Controller.button(UP,true) && select){
 			correct=true;
 			left = false;
 			right = false;
-		}else if(Controller.press(LEFT)){
+		}else if(Controller.button(LEFT,true) && select){
 			left=true;
 			right = false;
 			correct=false;
-		}else if(Controller.press(RIGHT)){
+		}else if(Controller.button(RIGHT,true) && select){
 			right=true;
 			correct = false;
 			left = false;
 		}
+		if(clock() - start > 40000000 && !select)select=true;
 
 		if(!rear){
 			if(last>170&&Yaw<10){
@@ -410,12 +417,14 @@ int main(void){
 		}*/
 
 		if(Controller.button(R1)){
+			r1 = true;
+
 			if(Controller.press(SQUARE)){//包んでポン　ソレノイドバージョン
 				timestamp[3]=clock();
 				ms.send(8,2,254);
 				if(!emergency){
 					ms.send(10,13,24);
-					ms.send(11,14,77+zone);
+					ms.send(11,14,74);
 					tsu[3] = true;
 				}
 			}
@@ -424,7 +433,7 @@ int main(void){
 				ms.send(4,2,251);
 				if(!emergency){
 					ms.send(10,15,22);
-					ms.send(11,15,77+zone);
+					ms.send(11,15,72);
 					tsu[4] = true;
 				}
 			}
@@ -447,13 +456,14 @@ int main(void){
 				back = false;
 			}
 		}else{
+			r1 = false;
 
 			if(Controller.press(TRIANGLE)){
 				timestamp[0]=clock();
 				ms.send(8,2,251);
 				if(!emergency){
 					ms.send(10,12,20);
-					ms.send(11,11,77+zone);
+					ms.send(11,11,70);
 					tsu[0] = true;
 				}
 			}
@@ -472,16 +482,16 @@ int main(void){
 				ms.send(8,2,253);
 				if(!emergency){
 					ms.send(10,14,25);
-					ms.send(11,13,77+zone);
+					ms.send(11,13,75);
 					tsu[2] = true;
 				}
 			}
 		}
 
 		lc = ledc;
-		ledc = clock()/20000%6;//テープＬＥＤシリアルカウント生成
+		ledc = (unsigned)clock()/20000%6;//テープＬＥＤシリアルカウント生成
 		if(ledc != lc){
-			if(gpioRead(26))ledc = 0;
+			if(gpioRead(26) || emergency)ledc = 0;
 			led = true;
 			cout << ledc << endl;
 		}else{
@@ -490,20 +500,29 @@ int main(void){
 
 		if(clock() - timestamp[0] > 5000000 && led && ledc == 1){
 			tsu[0] = false;
-			ms.send(10,12,17+zone);
-			ms.send(11,11,80);
+			if(!r1){
+				ms.send(10,12,17+zone);
+				ms.send(11,11,87+zone);
+			}else{
+				ms.send(10,12,11 + zone * 3);
+				ms.send(11,11,21 + zone * 3);
+			}
 		}else if(clock() - timestamp[0] > 2000000){
 			ms.send(8,2,-251);
 		}else if(tsu[0] && led && ledc == 1){
-			ms.send(10,12,20);
-			ms.send(11,11,77+zone);	
+			ms.send(10,12,21);
+			ms.send(11,11,71);	
 		}
 
 		if(clock() - timestamp[1] > 5000000 && led && ledc == 2){
 			tsu[1] = false;
 			//ms.send(10,14,17+zone);//ms.send(11,16,17+zone)
 			//ms.send(11,12,83);
-			ms.send(11,108,zone);
+			if(r1){
+				ms.send(11,106,zone);
+			}else{
+				ms.send(11,108,zone);
+			}
 		}else if(clock() - timestamp[1] > 2000000){
 			ms.send(8,2,-252);
 		}else if(tsu[1] && led && ledc == 2){
@@ -512,34 +531,49 @@ int main(void){
 
 		if(clock() - timestamp[2] > 5000000 && led && ledc == 3){
 			tsu[2] = false;
-			ms.send(11,13,85);
-			ms.send(10,14,17+zone);
+			if(r1){
+				ms.send(11,13,21 + zone * 3);
+				ms.send(10,14,11 + zone * 3);
+			}else{
+				ms.send(11,13,87+zone);
+				ms.send(10,14,17+zone);
+			}
 		}else if(clock() - timestamp[2] > 2000000){
 			ms.send(8,2,-253);
 		}else if(tsu[2] && led && ledc == 3){
-			ms.send(11,13,77+zone);
+			ms.send(11,13,75);
 			ms.send(10,14,25);
 		}
 
 		if(clock() - timestamp[3] > 5000000 && led && ledc == 4){
 			tsu[3] = false;
-			ms.send(10,13,17+zone);
-			ms.send(11,14,84);
+			if(r1){
+				ms.send(10,13,11 + zone * 3);
+				ms.send(11,14,21 + zone * 3);
+			}else{
+				ms.send(10,13,17+zone);
+				ms.send(11,14,87+zone);
+			}
 		}else if(clock() - timestamp[3] > 2000000){
 			ms.send(8,2,-254);
 		}else if(tsu[3] && led && ledc == 4){
 			ms.send(10,13,24);
-			ms.send(11,14,77+zone);
+			ms.send(11,14,74);
 		}
 
 		if(clock() - timestamp[4] > 5000000 && led && ledc == 5){
 			tsu[4] = false;
-			ms.send(11,15,82);
-			ms.send(10,15,17+zone);
+			if(r1){
+				ms.send(11,15,21 + zone * 3);
+				ms.send(10,15,11 + zone * 3);
+			}else{
+				ms.send(11,15,87+zone);
+				ms.send(10,15,17+zone);
+			}
 		}else if(clock() - timestamp[4] > 2000000){
 			ms.send(4,2,-251);
 		}else if(tsu[4] && led && ledc == 5){
-			ms.send(11,15,77+zone);
+			ms.send(11,15,72);
 			ms.send(10,15,22);
 		}
 
@@ -574,12 +608,12 @@ int main(void){
 				ms.send(11,105,zone);
 				ms.send(10,105,zone);
 				emergency = true;
-			}else if(!select){
-				if(clock() - start>20000000)select=true;
+			}else if(!mada){
+				if(clock() - start>60000000)mada=true;
 				emergency=false;
 				ms.send(10,106,zone);
 			}else{
-				ms.send(10,107,zone);
+				ms.send(10,107,!r1*zone + r1 * (-6+zone*3));
 				emergency=false;
 			}
 			send=false;
